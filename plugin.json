@@ -1,0 +1,78 @@
+{
+  "id": "gemini_nano_banana_2_1",
+  "uuid": "42dfccf1-ed9f-4c66-8307-b316314cfd74",
+  "emoji": "🍌",
+  "title": "Gemini Nano Banana 2.1",
+  "createdAt": "2026-10-07T00:00:00.000Z",
+  "githubURL": "https://github.com/TypingMind/plugin-gemini-nano-banana-2-1",
+  "openaiSpec": {
+    "name": "gemini_nano_banana_2_1",
+    "parameters": {
+      "type": "object",
+      "required": ["prompt"],
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "The description of the image to generate or edit."
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "typingmind-attachment"
+          },
+          "description": "Pass image attachment ids from <CHAT_ATTACHMENTS> to edit or use as references. Pass an empty array [] to generate a new image without using previous images. Omit this parameter to edit images from this plugin's last output."
+        },
+        "filename": {
+          "type": "string",
+          "description": "A short, descriptive file name for the created image, without extension."
+        }
+      }
+    },
+    "description": "Generate a new image, or edit existing image attachments with Gemini Nano Banana 2.1."
+  },
+  "outputType": "cards",
+  "userSettings": [
+    {
+      "name": "geminikey",
+      "type": "password",
+      "label": "Gemini API Key (Required)",
+      "required": true,
+      "description": "Get an API key from Google AI Studio.",
+      "placeholder": "AIza******"
+    },
+    {
+      "name": "aspectRatio",
+      "type": "enum",
+      "label": "Aspect ratio",
+      "values": [
+        "auto",
+        "1:1",
+        "1:4",
+        "1:8",
+        "2:3",
+        "3:2",
+        "3:4",
+        "4:1",
+        "4:3",
+        "4:5",
+        "5:4",
+        "8:1",
+        "9:16",
+        "16:9",
+        "21:9"
+      ],
+      "defaultValue": "auto"
+    },
+    {
+      "name": "imageSize",
+      "type": "enum",
+      "label": "Image size",
+      "values": ["auto", "1K", "2K", "4K"],
+      "defaultValue": "auto"
+    }
+  ],
+  "authenticationType": "AUTH_TYPE_NONE",
+  "implementationType": "javascript",
+  "dynamicContextEndpoints": [],
+  "permissions": ["read_chat_attachments"]
+}
