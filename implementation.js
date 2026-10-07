@@ -47,16 +47,9 @@ async function gemini_nano_banana_2_1(
   const maxBase64Chars = Math.floor(
     maxInlineBase64Chars / Math.max(1, attachedImages.length),
   );
-  let inlineBase64Chars = 0;
   for (const imageUrl of attachedImages) {
     const image = await loadImageForGemini(imageUrl, maxBase64Chars);
-    inlineBase64Chars += image.data.length;
     input.push(image);
-  }
-  if (inlineBase64Chars > maxInlineBase64Chars) {
-    throw new Error(
-      "The selected images are too large for Gemini's inline request limit.",
-    );
   }
 
   const responseFormat = { type: "image" };
@@ -106,6 +99,7 @@ async function gemini_nano_banana_2_1(
             typeof params.filename === "string" && params.filename.trim()
               ? params.filename.trim()
               : undefined,
+          sync: true,
         },
       },
     ],
@@ -175,7 +169,6 @@ async function loadImageForGemini(url, maxBase64Chars) {
 
     const outputType = mimeType === "image/jpeg" ? "image/jpeg" : "image/png";
     while (true) {
-      context.clearRect(0, 0, canvas.width, canvas.height);
       context.imageSmoothingQuality = "high";
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
 
