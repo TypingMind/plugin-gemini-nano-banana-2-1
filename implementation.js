@@ -8,6 +8,7 @@ async function gemini_nano_banana_2_1(
   const model = "gemini-nano-banana-2.1";
   const aspectRatio = userSettings.aspectRatio || "auto";
   const imageSize = userSettings.imageSize || "auto";
+  const thinkingLevel = userSettings.thinkingLevel || "medium";
 
   if (!geminikey) {
     throw new Error(
@@ -42,8 +43,20 @@ async function gemini_nano_banana_2_1(
   }
 
   const input = [{ type: "text", text: prompt }];
+  const maxInlineBase64Chars = 18_000_000;
+  const maxBase64Chars = Math.floor(
+    maxInlineBase64Chars / Math.max(1, attachedImages.length),
+  );
+  let inlineBase64Chars = 0;
   for (const imageUrl of attachedImages) {
-    input.push(await loadImageForGemini(imageUrl));
+    const image = await loadImageForGemini(imageUrl, maxBase64Chars);
+    inlineBase64Chars += image.data.length;
+    input.push(image);
+  }
+  if (inlineBase64Chars > maxInlineBase64Chars) {
+    throw new Error(
+      "The selected images are too large for Gemini's inline request limit.",
+    );
   }
 
   const responseFormat = { type: "image" };
@@ -62,6 +75,9 @@ async function gemini_nano_banana_2_1(
         model,
         input,
         response_format: responseFormat,
+        generation_config: {
+          thinking_level: thinkingLevel,
+        },
       }),
     },
   );
@@ -111,22 +127,95 @@ function getOutputImage(data) {
   return null;
 }
 
-async function loadImageForGemini(url) {
+async function loadImageForGemini(url, maxBase64Chars) {
+  const maxImageEdge = 4096;
+  const supportedImageTypes = [
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+    "image/heic",
+    "image/heif",
+  ];
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to load image: ${response.status}`);
   }
 
   const blob = await response.blob();
-  const mimeType = blob.type || "image/png";
-  if (!mimeType.startsWith("image/")) {
+  const mimeType = blob.type.toLowerCase();
+  if (!supportedImageTypes.includes(mimeType)) {
     throw new Error(`Unsupported image type: ${mimeType}`);
+  }
+
+  if (mimeType === "image/heic" || mimeType === "image/heif") {
+    return inlineImage(mimeType, await blobToBase64(blob), maxBase64Chars);
+  }
+
+  const image = new Image();
+  const canvas = document.createElement("canvas");
+  const imageUrl = URL.createObjectURL(blob);
+  try {
+    image.src = imageUrl;
+    await image.decode();
+
+    const initialScale = Math.min(
+      1,
+      maxImageEdge / Math.max(image.naturalWidth, image.naturalHeight),
+    );
+    canvas.width = Math.max(1, Math.floor(image.naturalWidth * initialScale));
+    canvas.height = Math.max(1, Math.floor(image.naturalHeight * initialScale));
+
+    const context = canvas.getContext("2d", {
+      colorSpace: "srgb",
+      colorType: "unorm8",
+    });
+    if (!context) {
+      throw new Error("Unable to prepare image: canvas is unavailable.");
+    }
+
+    const outputType = mimeType === "image/jpeg" ? "image/jpeg" : "image/png";
+    while (true) {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.imageSmoothingQuality = "high";
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+      const encoded = await new Promise((resolve) =>
+        canvas.toBlob(resolve, outputType, 0.92),
+      );
+      if (!encoded) {
+        throw new Error("Unable to encode image.");
+      }
+
+      const data = await blobToBase64(encoded);
+      if (data.length <= maxBase64Chars) {
+        return inlineImage(outputType, data, maxBase64Chars);
+      }
+      if (canvas.width === 1 && canvas.height === 1) {
+        throw new Error(
+          "Image is too large for Gemini's inline request limit.",
+        );
+      }
+
+      const scale = Math.min(0.8, Math.sqrt(maxBase64Chars / data.length) * 0.9);
+      canvas.width = Math.max(1, Math.floor(canvas.width * scale));
+      canvas.height = Math.max(1, Math.floor(canvas.height * scale));
+    }
+  } finally {
+    canvas.width = canvas.height = 0;
+    image.removeAttribute("src");
+    URL.revokeObjectURL(imageUrl);
+  }
+}
+
+function inlineImage(mimeType, data, maxBase64Chars) {
+  if (data.length > maxBase64Chars) {
+    throw new Error("Image is too large for Gemini's inline request limit.");
   }
 
   return {
     type: "image",
     mime_type: mimeType,
-    data: await blobToBase64(blob),
+    data,
   };
 }
 

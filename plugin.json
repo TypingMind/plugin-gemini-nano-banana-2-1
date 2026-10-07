@@ -5,6 +5,7 @@
   "title": "Gemini Nano Banana 2.1",
   "createdAt": "2026-10-07T00:00:00.000Z",
   "githubURL": "https://github.com/TypingMind/plugin-gemini-nano-banana-2-1",
+  "iconURL": "https://custom.typingmind.com/assets/models/nanobanana-color.jpg",
   "openaiSpec": {
     "name": "gemini_nano_banana_2_1",
     "parameters": {
@@ -69,6 +70,14 @@
       "label": "Image size",
       "values": ["auto", "1K", "2K", "4K"],
       "defaultValue": "auto"
+    },
+    {
+      "name": "thinkingLevel",
+      "type": "enum",
+      "label": "Thinking level",
+      "values": ["minimal", "medium", "high"],
+      "defaultValue": "medium",
+      "description": "Controls Gemini reasoning effort and latency."
     }
   ],
   "authenticationType": "AUTH_TYPE_NONE",

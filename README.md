@@ -9,4 +9,5 @@ Add a Gemini API key in the plugin settings, then use prompts such as:
 > [Image Attachment] Add a hat to this cat
 
 The plugin supports new images, edits from selected attachments, edits from the
-previous plugin output, aspect ratio, and 1K/2K/4K output size.
+previous plugin output, aspect ratio, 1K/2K/4K output size, and Gemini thinking
+level (`minimal`, `medium`, or `high`).
